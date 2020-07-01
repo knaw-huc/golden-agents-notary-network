@@ -18,6 +18,7 @@ import datetime
 import json
 import re
 from itertools import count
+import calendar
 
 from unidecode import unidecode
 
@@ -35,13 +36,33 @@ bio = Namespace("http://purl.org/vocab/bio/0.1/")
 foaf = Namespace("http://xmlns.com/foaf/0.1/")
 void = Namespace("http://rdfs.org/ns/void#")
 dcterms = Namespace("http://purl.org/dc/terms/")
+saa = Namespace("https://data.goldenagents.org/datasets/SAA/ontology/")
+pnv = Namespace('https://w3id.org/pnv#')
 
 rdflib.graph.DATASET_DEFAULT_GRAPH_ID = create
 
 ns = Namespace("https://data.create.humanities.uva.nl/id/notarissennetwerk/")
 
+nsPerson = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/person/")
+nsPersonName = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/personname/")
+nsEvent = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/event/")
+nsRole = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/role/")
+nsAddress = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/address/")
+nsOccupation = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/occupation/")
+nsPlace = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/place/")
+
 with open('data/name2adamlink.json') as infile:
     name2adamlink = json.load(infile)
+
+with open('data/place2tgn.json') as infile:
+    place2tgn = json.load(infile)
 
 
 class Entity(rdfSubject):
@@ -164,6 +185,8 @@ class Person(Entity):
     birth = rdfSingle(bio.birth)
     death = rdfSingle(bio.death)
 
+    hasName = rdfMultiple(pnv.hasName)
+
 
 class PostalAddress(Entity):
     rdf_type = schema.PostalAddress
@@ -184,10 +207,34 @@ class Role(Entity):
     startDate = rdfSingle(schema.startDate)
     endDate = rdfSingle(schema.endDate)
 
+    hasTimeStamp = rdfSingle(sem.hasTimeStamp)
+    hasBeginTimeStamp = rdfSingle(sem.hasBeginTimeStamp)
+    hasEndTimeStamp = rdfSingle(sem.hasEndTimeStamp)
+    hasEarliestBeginTimeStamp = rdfSingle(sem.hasEarliestBeginTimeStamp)
+    hasLatestBeginTimeStamp = rdfSingle(sem.hasLatestBeginTimeStamp)
+    hasEarliestEndTimeStamp = rdfSingle(sem.hasEarliestEndTimeStamp)
+    hasLatestEndTimeStamp = rdfSingle(sem.hasLatestEndTimeStamp)
 
-bio = Namespace("http://purl.org/vocab/bio/0.1/")
-sem = Namespace("http://semanticweb.cs.vu.nl/2009/11/sem/")
-saa = Namespace("https://data.goldenagents.org/datasets/SAA/ontology/")
+
+class PropertyValue(Entity):
+    rdf_type = schema.PropertyValue
+
+    value = rdfSingle(schema.value)
+
+
+class PersonName(Entity):
+    rdf_type = pnv.PersonName
+
+    literalName = rdfSingle(pnv.literalName)
+    givenName = rdfSingle(pnv.givenName)
+    surnamePrefix = rdfSingle(pnv.surnamePrefix)
+    baseSurname = rdfSingle(pnv.baseSurname)
+
+    prefix = rdfSingle(pnv.prefix)
+    disambiguatingDescription = rdfSingle(pnv.disambiguatingDescription)
+    patronym = rdfSingle(pnv.patronym)
+    surname = rdfSingle(pnv.surname)
+
 
 #######
 # BIO #
@@ -195,7 +242,7 @@ saa = Namespace("https://data.goldenagents.org/datasets/SAA/ontology/")
 
 
 class Event(rdfSubject):
-    rdf_type = bio.Event
+    rdf_type = bio.Event, sem.Event
     label = rdfMultiple(RDFS.label)
 
     date = rdfSingle(bio.date)
@@ -223,45 +270,45 @@ class Event(rdfSubject):
 
 
 class IndividualEvent(Event):
-    rdf_type = bio.IndividualEvent
+    rdf_type = bio.IndividualEvent, sem.Event
     principal = rdfSingle(bio.principal)
 
     label = rdfMultiple(RDFS.label)
 
 
 class GroupEvent(Event):
-    rdf_type = bio.GroupEvent
+    rdf_type = bio.GroupEvent, sem.Event
     partner = rdfMultiple(bio.partner)
 
     label = rdfMultiple(RDFS.label)
 
 
 class Birth(IndividualEvent):
-    rdf_type = bio.Birth
+    rdf_type = bio.Birth, sem.Event
 
 
 class Baptism(IndividualEvent):
-    rdf_type = bio.Baptism
+    rdf_type = bio.Baptism, sem.Event
 
 
 class Burial(IndividualEvent):
-    rdf_type = bio.Burial
+    rdf_type = bio.Burial, sem.Event
 
 
 class Death(IndividualEvent):
-    rdf_type = bio.Death
+    rdf_type = bio.Death, sem.Event
 
 
 class Resignation(IndividualEvent):
-    rdf_type = bio.Resignation
+    rdf_type = bio.Resignation, sem.Event
 
 
 class Marriage(GroupEvent):
-    rdf_type = bio.Marriage
+    rdf_type = bio.Marriage, sem.Event
 
 
 class Divorce(GroupEvent):
-    rdf_type = bio.Divorce
+    rdf_type = bio.Divorce, sem.Event
 
 
 class IntendedMarriage(GroupEvent):
@@ -288,6 +335,25 @@ def main(loadData: str = None, target: str = 'data/notarissennetwerk.trig'):
     #######
 
     toRDF(DATA, target=target)
+
+
+def yearToDate(yearString):
+    if yearString is None or yearString == "?" or '0000' in str(yearString):
+        return None, None
+
+    if type(yearString) == str and yearString.count('-') == 1:
+        year, month = yearString.split('-')
+        _, lastday = calendar.monthrange(int(year), int(month))
+
+        beginDate = f"{year}-{month}-01"
+        endDate = f"{year}-{month}-{str(lastday).zfill(1)}"
+
+        return Literal(beginDate,
+                       datatype=XSD.date), Literal(endDate, datatype=XSD.date)
+    else:
+        return Literal(f"{yearString}-01-01",
+                       datatype=XSD.date), Literal(f"{yearString}-12-31",
+                                                   datatype=XSD.date)
 
 
 def street2adamlink(street, name2adamlink=name2adamlink):
@@ -321,19 +387,37 @@ def toRDF(d: dict, target: str):
     type2class = {
         None: None,
         '': None,
-        'aanstelling': None,
-        'admissie': None,
+        'aanstelling': Event,
+        'admissie': Event,
         'ambtsbeëindiging': Resignation,
         'begraven': Burial,
-        'benoeming': None,
+        'benoeming': Event,
         'doop': Baptism,
-        'faillissement': None,
+        'faillissement': Event,
         'geboren': Birth,
         'gescheiden': Divorce,
         'huwelijk': Marriage,
         'ondertrouw': IntendedMarriage,
         'overlijden': Death,
-        'tijdelijk ambt gestaakt': None
+        'tijdelijk ambt gestaakt': Event
+    }
+
+    type2label = {
+        None: "",
+        '': "",
+        'aanstelling': 'aanstelling',
+        'admissie': 'admissie',
+        'ambtsbeëindiging': 'ambtsbeëindiging',
+        'begraven': 'begrafenis',
+        'benoeming': 'benoeming',
+        'doop': 'doop',
+        'faillissement': 'faillissement',
+        'geboren': 'geboorte',
+        'gescheiden': 'echtscheiding',
+        'huwelijk': 'huwelijk',
+        'ondertrouw': 'ondertrouw',
+        'overlijden': 'overlijden',
+        'tijdelijk ambt gestaakt': 'tijdelijke ambtsstaking'
     }
 
     rel2prop = {
@@ -411,22 +495,44 @@ def toRDF(d: dict, target: str):
 
     for notary in d['notaries']:
 
+        roleCounter = count(1)
+
+        page = CreativeWork(URIRef(notary['uri']))
+
         if notary['place']:
             placeidentifier = "".join([
                 i for i in notary['place']
                 if i.lower() in 'abcdefghijklmnopqrstuvwxyz-'
             ])
-            birthPlace = Place(BNode(placeidentifier), name=[notary['place']])
+            birthPlace = Place(nsPlace.term(placeidentifier),
+                               name=[notary['place']],
+                               sameAs=[place2tgn.get(notary['place'])]
+                               if place2tgn.get(notary['place']) else [])
         else:
             birthPlace = None
 
-        p = Person(URIRef(notary['uri']),
+        pn = PersonName(nsPersonName.term(str(notary['id'])),
+                        givenName=notary['firstName'],
+                        patronym=notary['patronym'],
+                        baseSurname=notary['lastName'],
+                        surnamePrefix=notary['prefix'],
+                        literalName=notary['name'],
+                        label=[notary['name']])
+
+        p = Person(nsPerson.term(str(notary['id'])),
                    name=[notary['name']],
+                   hasName=[pn],
                    givenName=notary['firstName'],
                    familyName=notary['lastName'],
                    birthPlace=birthPlace,
-                   identifier=int(notary['rep_id'])
+                   identifier=PropertyValue(
+                       None,
+                       name=[Literal("Protocol Notarieel Archief", lang="nl")],
+                       value=int(notary['rep_id']))
                    if notary['rep_id'] != 0 else None)
+
+        page.mainEntity = p
+        p.mainEntityOfPage = page
 
         names = []
         for n in notary['name_variants']:
@@ -435,25 +541,35 @@ def toRDF(d: dict, target: str):
 
         # Adresses
         addresses = []
-        for a in notary['addresses']:
-            startDate = Literal(a['from'],
-                                datatype=XSD.gYear) if a['from'] else None
-            endDate = Literal(a['to'], datatype=XSD.gYear) if a['to'] else None
+        for n, a in enumerate(notary['addresses'], 1):
+            startDate = Literal(a['from'], datatype=XSD.gYear,
+                                normalize=False) if a['from'] else None
+            endDate = Literal(a['to'], datatype=XSD.gYear,
+                              normalize=False) if a['to'] else None
+
+            earliestBeginTimeStamp, latestBeginTimeStamp = yearToDate(
+                a['from'])
+            earliestEndTimeStamp, latestEndTimeStamp = yearToDate(a['to'])
 
             adamlink = street2adamlink(a['street'])
 
             if adamlink is None:
                 print(a['street'])
 
-            address = PostalAddress(None,
+            address = PostalAddress(nsAddress.term(f"{notary['id']}-{n}"),
                                     streetAddress=a['street'],
+                                    name=[a['street']],
                                     closeMatch=adamlink)  # TODO: Adamlink
 
-            r = Role(None,
+            r = Role(nsRole.term(f"{notary['id']}-{next(roleCounter)}"),
                      startDate=startDate,
                      endDate=endDate,
                      address=address,
-                     name=[a['street']])
+                     name=[a['street']],
+                     hasEarliestBeginTimeStamp=earliestBeginTimeStamp,
+                     hasLatestBeginTimeStamp=latestBeginTimeStamp,
+                     hasEarliestEndTimeStamp=earliestEndTimeStamp,
+                     hasLatestEndTimeStamp=latestEndTimeStamp)
 
             addresses.append(r)
 
@@ -462,36 +578,82 @@ def toRDF(d: dict, target: str):
         for nEvent, e in enumerate(notary['events'], 1):
 
             EventClass = type2class[e['type']]
+            eventTypeLabel = type2label.get(e['type'], "").title()
             if EventClass:
-                if e['date']:
+                if e['date'] and e['date'] != '0000':
+
+                    yearLabel = e['date'][:4]
+
                     try:
                         date = datetime.datetime.fromisoformat(
                             e['date']).date()
                         date = Literal(date, datatype=XSD.date)
+
+                        timeStamp = date
+                        beginTimeStamp = date
+                        endTimeStamp = date
+                        earliestBeginTimeStamp = date
+                        latestBeginTimeStamp = date
+                        earliestEndTimeStamp = date
+                        latestEndTimeStamp = date
+
                     except:
                         if e['date'].endswith('00-00') or len(e['date']) == 4:
-                            date = Literal(e['date'][:4], datatype=XSD.gYear)
+                            date = Literal(e['date'][:4],
+                                           datatype=XSD.gYear,
+                                           normalize=False)
+
+                            timeStamp = None
+                            beginTimeStamp = None
+                            endTimeStamp = None
+                            earliestBeginTimeStamp, latestEndTimeStamp = yearToDate(
+                                e['date'][:4])
+                            earliestEndTimeStamp, latestEndTimeStamp = yearToDate(
+                                e['date'][:4])
+
                         elif e['date'].endswith('-00') or len(e['date']) == 7:
                             date = Literal(e['date'][:7],
-                                           datatype=XSD.gYearMonth)
+                                           datatype=XSD.gYearMonth,
+                                           normalize=False)
+
+                            timeStamp = None
+                            beginTimeStamp = None
+                            endTimeStamp = None
+                            earliestBeginTimeStamp, latestEndTimeStamp = yearToDate(
+                                e['date'][:7])
+                            earliestEndTimeStamp, latestEndTimeStamp = yearToDate(
+                                e['date'][:7])
+
                         else:
                             print(e['date'])
                 else:
                     date = None
+                    yearLabel = "?"
 
                 if e['place']:
                     placeidentifier = "".join([
                         i for i in e['place']
                         if i.lower() in 'abcdefghijklmnopqrstuvwxyz-'
                     ])
-                    place = Place(BNode(placeidentifier), name=[e['place']])
+                    place = Place(nsPlace.term(placeidentifier),
+                                  name=[e['place']],
+                                  sameAs=[place2tgn.get(e['place'])]
+                                  if place2tgn.get(e['place']) else [])
                 else:
                     place = None
 
                 o = EventClass(
-                    None,  #URIRef(notary['uri'] + f"#event-{nEvent}")
+                    nsEvent.term(f"{notary['id']}-{nEvent}"),
                     date=date,
-                    place=place)
+                    hasTimeStamp=timeStamp,
+                    hasBeginTimeStamp=beginTimeStamp,
+                    hasEndTimeStamp=endTimeStamp,
+                    hasEarliestBeginTimeStamp=earliestBeginTimeStamp,
+                    hasLatestBeginTimeStamp=latestEndTimeStamp,
+                    hasEarliestEndTimeStamp=earliestEndTimeStamp,
+                    hasLatestEndTimeStamp=latestEndTimeStamp,
+                    place=place,
+                    label=[f"{eventTypeLabel} van {p.name[0]} ({yearLabel})"])
                 try:
                     o.principal = p
                 except AttributeError:
@@ -501,8 +663,10 @@ def toRDF(d: dict, target: str):
 
                 if EventClass == Birth:
                     p.birth = o
+                    p.birthDate = date
                 elif EventClass == Death:
                     p.death = o
+                    p.deathDate = date
 
         p.address = addresses
         p.event = lifeEvents
@@ -511,17 +675,30 @@ def toRDF(d: dict, target: str):
         occupations = []
         for occ in notary['jobs']:
             startDate = Literal(occ['from'],
-                                datatype=XSD.gYear) if occ['from'] else None
-            endDate = Literal(occ['to'],
-                              datatype=XSD.gYear) if occ['to'] else None
+                                datatype=XSD.gYear,
+                                normalize=False) if occ['from'] else None
+            endDate = Literal(occ['to'], datatype=XSD.gYear,
+                              normalize=False) if occ['to'] else None
 
-            occupation = Occupation(None, name=[occ['details']])
+            earliestBeginTimeStamp, latestBeginTimeStamp = yearToDate(
+                occ['from'])
+            earliestEndTimeStamp, latestEndTimeStamp = yearToDate(occ['to'])
 
-            r = Role(None,
+            occupation = Occupation(nsOccupation.term("".join([
+                i for i in occ['details']
+                if i.lower() in 'abcdefghijklmnopqrstuvwxyz-'
+            ])),
+                                    name=[occ['details']])
+
+            r = Role(nsRole.term(f"{notary['id']}-{next(roleCounter)}"),
                      startDate=startDate,
                      endDate=endDate,
                      hasOccupation=occupation,
-                     name=[occ['details']])
+                     name=[occ['details']],
+                     hasEarliestBeginTimeStamp=earliestBeginTimeStamp,
+                     hasLatestBeginTimeStamp=latestBeginTimeStamp,
+                     hasEarliestEndTimeStamp=earliestEndTimeStamp,
+                     hasLatestEndTimeStamp=latestEndTimeStamp)
 
             occupations.append(r)
 
@@ -530,8 +707,9 @@ def toRDF(d: dict, target: str):
         # Relations
         for rel in notary['relations']:
             # prop = rel2prop[rel['type']]
-            prop = foaf.knows
-            obj = URIRef(rel['uri'])
+            prop = schema.knows
+            otherId = rel['uri'].rsplit('/', 1)[1]
+            obj = nsPerson.term(otherId)
 
             g.add((p.resUri, prop, obj))
             g.add((obj, prop, p.resUri))
@@ -542,14 +720,14 @@ def toRDF(d: dict, target: str):
 
     rdfSubject.db = ds
 
-    description = """"""
+    description = """Het Notarissennetwerk is een bewerking van het Repertorium van Notarissen. Hier worden biografische gegevens over de notarissen verzameld; jaren waarin ze werkzaam waren, locaties van hun kantoren, namen van klerken en opvolgers, specialisaties, religies en talen, bijverdiensten, netwerken en alle andere gegevens die we over deze veelzijdige mannen konden vinden. Het is work in progresss en wordt steeds weer aangevuld met nieuwe kennis uit het project Alle Amsterdamse Akten van het Stadsarchief Amsterdam."""
 
     contributors = ""
     download = DataDownload(
         None,
         contentUrl=URIRef("http://example.com"),
         # name=Literal(),
-        url=URIRef("http://example.com"),
+        url=URIRef("https://github.com/LvanWissen/notarissennetwerk-rdf"),
         encodingFormat="application/trig")
 
     date = Literal(datetime.datetime.now().strftime('%Y-%m-%d'),
@@ -583,7 +761,8 @@ def toRDF(d: dict, target: str):
         vocabulary=[
             URIRef("http://schema.org/"),
             URIRef("http://semanticweb.cs.vu.nl/2009/11/sem/"),
-            URIRef("http://xmlns.com/foaf/0.1/")
+            URIRef("http://xmlns.com/foaf/0.1/"),
+            URIRef("http://purl.org/vocab/bio/0.1/")
         ],
         triples=sum(1 for i in ds.graph(identifier=ns).subjects()),
         version="1.0",
@@ -598,6 +777,7 @@ def toRDF(d: dict, target: str):
     ds.bind('foaf', foaf)
     ds.bind('bio', bio)
     ds.bind('skos', SKOS)
+    ds.bind('pnv', pnv)
 
     ds.serialize(target, format='trig')
 
