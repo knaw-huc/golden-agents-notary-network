@@ -38,6 +38,7 @@ void = Namespace("http://rdfs.org/ns/void#")
 dcterms = Namespace("http://purl.org/dc/terms/")
 saa = Namespace("https://data.goldenagents.org/datasets/SAA/ontology/")
 pnv = Namespace('https://w3id.org/pnv#')
+rel = Namespace("http://purl.org/vocab/relationship/")
 
 rdflib.graph.DATASET_DEFAULT_GRAPH_ID = create
 
@@ -63,6 +64,9 @@ with open('data/name2adamlink.json') as infile:
 
 with open('data/place2tgn.json') as infile:
     place2tgn = json.load(infile)
+
+with open('data/place2ecartico.json') as infile:
+    place2ecartico = json.load(infile)
 
 
 class Entity(rdfSubject):
@@ -327,9 +331,6 @@ def main(loadData: str = None, target: str = 'data/notarissennetwerk.trig'):
         'data/notarissennetwerk.trig'.
     """
 
-    with open(loadData, 'r', encoding='utf-8') as infile:
-        DATA = json.load(infile)
-
     #######
     # RDF #
     #######
@@ -375,6 +376,23 @@ def street2adamlink(street, name2adamlink=name2adamlink):
     return adamlink
 
 
+def getSameAsPlace(placename: str) -> list:
+
+    links = []
+
+    # tgn
+    tgn = place2tgn.get(placename)
+    if tgn:
+        links.append(URIRef(tgn))
+
+    # ecartico
+    ecartico = place2ecartico.get(placename)
+    if ecartico:
+        links.append(URIRef(ecartico))
+
+    return links
+
+
 def toRDF(d: dict, target: str):
     """Convert the earlier harvested and structured data to RDF.
 
@@ -387,19 +405,19 @@ def toRDF(d: dict, target: str):
     type2class = {
         None: None,
         '': None,
-        'aanstelling': Event,
-        'admissie': Event,
+        'aanstelling': IndividualEvent,
+        'admissie': IndividualEvent,
         'ambtsbeëindiging': Resignation,
         'begraven': Burial,
-        'benoeming': Event,
+        'benoeming': IndividualEvent,
         'doop': Baptism,
-        'faillissement': Event,
+        'faillissement': IndividualEvent,
         'geboren': Birth,
         'gescheiden': Divorce,
         'huwelijk': Marriage,
         'ondertrouw': IntendedMarriage,
         'overlijden': Death,
-        'tijdelijk ambt gestaakt': Event
+        'tijdelijk ambt gestaakt': IndividualEvent
     }
 
     type2label = {
@@ -425,13 +443,13 @@ def toRDF(d: dict, target: str):
         'achterkleinzoon van': None,
         'achterneef van': None,
         'betovergrootvader van': None,
-        'broer van': None,
-        'grootvader van': None,
+        'broer van': rel.siblingOf,
+        'grootvader van': rel.grandparentOf,
         'had als getuige': None,
         'had als klerk': None,
         'had als vertaler': None,
         'kind trouwde met kind van': None,
-        'kleinzoon van': None,
+        'kleinzoon van': rel.grandchildOf,
         'neef van': None,
         'niet gespecificeerd': None,
         'oom van': None,
@@ -439,16 +457,16 @@ def toRDF(d: dict, target: str):
         'opvolger van': None,
         'oudoom van': None,
         'overgrootvader van': None,
-        'samenwerking met': None,
+        'samenwerking met': rel.collaboratesWith,
         'schoonvader van': None,
         'schoonzoon van': None,
         'stiefvader van': None,
         'stiefzoon van': None,
-        'vader van': None,
+        'vader van': rel.parentOf,
         'was getuige bij': None,
         'was klerk bij': None,
         'was vertaler bij': None,
-        'zoon van': None,
+        'zoon van': rel.childOf,
         'zwager van': None
     }
 
@@ -457,13 +475,13 @@ def toRDF(d: dict, target: str):
         'achterkleinzoon van': None,
         'achterneef van': None,
         'betovergrootvader van': None,
-        'broer van': None,
-        'grootvader van': None,
+        'broer van': rel.siblingOf,
+        'grootvader van': rel.grandchildOf,
         'had als getuige': None,
         'had als klerk': None,
         'had als vertaler': None,
         'kind trouwde met kind van': None,
-        'kleinzoon van': None,
+        'kleinzoon van': rel.grandparentOf,
         'neef van': None,
         'niet gespecificeerd': None,
         'oom van': None,
@@ -471,16 +489,16 @@ def toRDF(d: dict, target: str):
         'opvolger van': None,
         'oudoom van': None,
         'overgrootvader van': None,
-        'samenwerking met': None,
+        'samenwerking met': rel.collaboratesWith,
         'schoonvader van': None,
         'schoonzoon van': None,
         'stiefvader van': None,
         'stiefzoon van': None,
-        'vader van': None,
+        'vader van': rel.childOf,
         'was getuige bij': None,
         'was klerk bij': None,
         'was vertaler bij': None,
-        'zoon van': None,
+        'zoon van': rel.parentOf,
         'zwager van': None
     }
 
@@ -506,8 +524,7 @@ def toRDF(d: dict, target: str):
             ])
             birthPlace = Place(nsPlace.term(placeidentifier),
                                name=[notary['place']],
-                               sameAs=[place2tgn.get(notary['place'])]
-                               if place2tgn.get(notary['place']) else [])
+                               sameAs=getSameAsPlace(notary['place']))
         else:
             birthPlace = None
 
@@ -519,11 +536,17 @@ def toRDF(d: dict, target: str):
                         literalName=notary['name'],
                         label=[notary['name']])
 
+        if notary['prefix']:
+            familyName = notary['prefix'].capitalize(
+            ) + ' ' + notary['lastName']
+        else:
+            familyName = notary['lastName']
+
         p = Person(nsPerson.term(str(notary['id'])),
                    name=[notary['name']],
                    hasName=[pn],
                    givenName=notary['firstName'],
-                   familyName=notary['lastName'],
+                   familyName=familyName,
                    birthPlace=birthPlace,
                    identifier=PropertyValue(
                        None,
@@ -637,8 +660,7 @@ def toRDF(d: dict, target: str):
                     ])
                     place = Place(nsPlace.term(placeidentifier),
                                   name=[e['place']],
-                                  sameAs=[place2tgn.get(e['place'])]
-                                  if place2tgn.get(e['place']) else [])
+                                  sameAs=getSameAsPlace(e['place']))
                 else:
                     place = None
 
@@ -705,14 +727,24 @@ def toRDF(d: dict, target: str):
         p.hasOccupation = occupations
 
         # Relations
-        for rel in notary['relations']:
-            # prop = rel2prop[rel['type']]
-            prop = schema.knows
-            otherId = rel['uri'].rsplit('/', 1)[1]
-            obj = nsPerson.term(otherId)
+        for relation in notary['relations']:
+            prop = rel2prop[relation['type']]
+            propInverse = rel2prop_inverse[relation['type']]
+
+            if prop is None:
+                prop = schema.knows
+            if propInverse is None:
+                propInverse = schema.knows
+
+            # prop = schema.knows
+            obj = nsPerson.term(str(relation['id']))
 
             g.add((p.resUri, prop, obj))
-            g.add((obj, prop, p.resUri))
+            g.add((obj, propInverse, p.resUri))
+
+    for prop in list(rel2prop.values()) + list(rel2prop_inverse.values()):
+        if prop:
+            g.add((prop, RDFS.subPropertyOf, schema.knows))
 
     ########
     # Meta #
@@ -762,7 +794,8 @@ def toRDF(d: dict, target: str):
             URIRef("http://schema.org/"),
             URIRef("http://semanticweb.cs.vu.nl/2009/11/sem/"),
             URIRef("http://xmlns.com/foaf/0.1/"),
-            URIRef("http://purl.org/vocab/bio/0.1/")
+            URIRef("http://purl.org/vocab/bio/0.1/"),
+            URIRef("http://purl.org/vocab/relationship/")
         ],
         triples=sum(1 for i in ds.graph(identifier=ns).subjects()),
         version="1.0",
@@ -778,16 +811,18 @@ def toRDF(d: dict, target: str):
     ds.bind('bio', bio)
     ds.bind('skos', SKOS)
     ds.bind('pnv', pnv)
+    ds.bind('rel', rel)
 
     ds.serialize(target, format='trig')
 
 
 if __name__ == "__main__":
 
-    DATA = 'data/notarissen.json'
+    # DATA = 'data/notarissen.json'
+
+    DATA = requests.get(
+        "https://notarissennetwerk.nl/notarissen/export/json").json()
+
     TARGET = 'data/notarissennetwerk.trig'
 
-    if os.path.exists(DATA):
-        main(loadData=DATA, target=TARGET)
-    else:
-        main(loadData=None, target=TARGET)
+    main(loadData=DATA, target=TARGET)
