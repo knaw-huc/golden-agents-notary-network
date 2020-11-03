@@ -50,6 +50,8 @@ nsPersonName = Namespace(
     "https://data.create.humanities.uva.nl/id/notarissennetwerk/personname/")
 nsEvent = Namespace(
     "https://data.create.humanities.uva.nl/id/notarissennetwerk/event/")
+nsEventType = Namespace(
+    "https://data.create.humanities.uva.nl/id/notarissennetwerk/eventtype/")
 nsRole = Namespace(
     "https://data.create.humanities.uva.nl/id/notarissennetwerk/role/")
 nsAddress = Namespace(
@@ -67,6 +69,9 @@ with open('data/place2tgn.json') as infile:
 
 with open('data/place2ecartico.json') as infile:
     place2ecartico = json.load(infile)
+
+with open('data/notarissenEAD.json') as infile:
+    notarissenEAD = json.load(infile)
 
 
 class Entity(rdfSubject):
@@ -90,7 +95,7 @@ class Entity(rdfSubject):
     inDataset = rdfSingle(void.inDataset)
 
     closeMatch = rdfSingle(SKOS.closeMatch)
-    identifier = rdfSingle(schema.identifier)
+    identifier = rdfMultiple(schema.identifier)
 
 
 class CreativeWork(Entity):
@@ -104,6 +109,10 @@ class CreativeWork(Entity):
     mainEntity = rdfSingle(schema.mainEntity)
 
 
+class InventoryBook(CreativeWork):
+    rdf_type = schema.Book, schema.Product
+
+
 class DatasetClass(Entity):
 
     # db = ConjunctiveGraph
@@ -111,13 +120,10 @@ class DatasetClass(Entity):
     rdf_type = void.Dataset, schema.Dataset
 
     title = rdfMultiple(dcterms.title)
-    description = rdfMultiple(dcterms.description)
-    descriptionSchema = rdfMultiple(schema.description)
+    description = rdfMultiple(schema.description)
     creator = rdfMultiple(schema.creator)
-    publisher = rdfMultiple(dcterms.publisher)
-    publisherSchema = rdfMultiple(schema.publisher)
-    contributor = rdfMultiple(dcterms.contributor)
-    contributorSchema = rdfMultiple(schema.contributor)
+    publisher = rdfMultiple(schema.publisher)
+    contributor = rdfMultiple(schema.contributor)
     source = rdfSingle(dcterms.source)
     isBasedOn = rdfSingle(schema.isBasedOn)
     date = rdfSingle(dcterms.date)
@@ -191,6 +197,8 @@ class Person(Entity):
 
     hasName = rdfMultiple(pnv.hasName)
 
+    owns = rdfMultiple(schema.owns)
+
 
 class PostalAddress(Entity):
     rdf_type = schema.PostalAddress
@@ -249,6 +257,8 @@ class Event(rdfSubject):
     rdf_type = bio.Event, sem.Event
     label = rdfMultiple(RDFS.label)
 
+    eventType = rdfSingle(sem.eventType)
+
     date = rdfSingle(bio.date)
 
     followingEvent = rdfSingle(bio.followingEvent)
@@ -271,6 +281,11 @@ class Event(rdfSubject):
     hasActor = rdfMultiple(sem.hasActor, range_type=sem.Role)
 
     comment = rdfSingle(RDFS.comment)
+
+
+class EventType(rdfSubject):
+    rdf_type = sem.EventType
+    label = rdfMultiple(RDFS.label)
 
 
 class IndividualEvent(Event):
@@ -507,6 +522,52 @@ def toRDF(d: dict, target: str):
 
     g = rdfSubject.db = ds.graph(identifier=ns)
 
+    type2eventType = {
+        None:
+        None,
+        '':
+        None,
+        'aanstelling':
+        EventType(nsEventType.term('aanstelling'),
+                  label=[Literal('Aanstelling', lang='nl')]),
+        'admissie':
+        EventType(nsEventType.term('admissie'),
+                  label=[Literal('Admissie', lang='nl')]),
+        'ambtsbeëindiging':
+        EventType(nsEventType.term('ambtsbeeindiging'),
+                  label=[Literal('Ambtsbeëindiging', lang='nl')]),
+        'begraven':
+        EventType(nsEventType.term('begrafenis'),
+                  label=[Literal('Begrafenis', lang='nl')]),
+        'benoeming':
+        EventType(nsEventType.term('benoeming'),
+                  label=[Literal('Benoeming', lang='nl')]),
+        'doop':
+        EventType(nsEventType.term('doop'), label=[Literal('Doop',
+                                                           lang='nl')]),
+        'faillissement':
+        EventType(nsEventType.term('faillissement'),
+                  label=[Literal('Faillissement', lang='nl')]),
+        'geboren':
+        EventType(nsEventType.term('geboorte'),
+                  label=[Literal('Geboorte', lang='nl')]),
+        'gescheiden':
+        EventType(nsEventType.term('scheiding'),
+                  label=[Literal('Scheiding', lang='nl')]),
+        'huwelijk':
+        EventType(nsEventType.term('huwelijk'),
+                  label=[Literal('Huwelijk', lang='nl')]),
+        'ondertrouw':
+        EventType(nsEventType.term('ondertrouw'),
+                  label=[Literal('Ondertrouw', lang='nl')]),
+        'overlijden':
+        EventType(nsEventType.term('overlijden'),
+                  label=[Literal('Overlijden', lang='nl')]),
+        'tijdelijk ambt gestaakt':
+        EventType(nsEventType.term('tijdelijkeambtsstaking'),
+                  label=[Literal('Tijdelijke ambtsstaking', lang='nl')])
+    }
+
     #############
     # Resources #
     #############
@@ -529,6 +590,7 @@ def toRDF(d: dict, target: str):
             birthPlace = None
 
         pn = PersonName(nsPersonName.term(str(notary['id'])),
+                        prefix=notary['title'],
                         givenName=notary['firstName'],
                         patronym=notary['patronym'],
                         baseSurname=notary['lastName'],
@@ -547,12 +609,41 @@ def toRDF(d: dict, target: str):
                    hasName=[pn],
                    givenName=notary['firstName'],
                    familyName=familyName,
-                   birthPlace=birthPlace,
-                   identifier=PropertyValue(
-                       None,
-                       name=[Literal("Protocol Notarieel Archief", lang="nl")],
-                       value=int(notary['rep_id']))
-                   if notary['rep_id'] != 0 else None)
+                   birthPlace=birthPlace)
+
+        # identifiers
+        identifiers = []
+        ## protocol
+        if notary['section_id'] and notary['col_id'] == 5075:
+            identifier = PropertyValue(
+                None,
+                name=[Literal("Protocol Notarieel Archief", lang="nl")],
+                value=str(notary['section_id']))
+            identifiers.append(identifier)
+
+            notaryData = notarissenEAD[str(notary['section_id'])]
+
+            uri = notaryData['uri']
+            p.url = uri
+
+            inventoryCodes = zip(notaryData['inventories'],
+                                 notaryData['codes'])
+            inventoryBooks = []
+            for inv, code in inventoryCodes:
+                b = InventoryBook(URIRef(inv), name=[code])
+                inventoryBooks.append(b)
+
+            p.owns = inventoryBooks
+
+        ## repertorium
+        if notary['rep_id']:
+            identifier = PropertyValue(
+                None,
+                name=[Literal("Repertorium", lang="nl")],
+                value=str(notary['rep_id']))
+            identifiers.append(identifier)
+
+        p.identifier = identifiers
 
         page.mainEntity = p
         p.mainEntityOfPage = page
@@ -602,6 +693,8 @@ def toRDF(d: dict, target: str):
 
             EventClass = type2class[e['type']]
             eventTypeLabel = type2label.get(e['type'], "").title()
+            eventType = type2eventType[e['type']]
+
             if EventClass:
                 if e['date'] and e['date'] != '0000':
 
@@ -666,6 +759,7 @@ def toRDF(d: dict, target: str):
 
                 o = EventClass(
                     nsEvent.term(f"{notary['id']}-{nEvent}"),
+                    eventType=eventType,
                     date=date,
                     hasTimeStamp=timeStamp,
                     hasBeginTimeStamp=beginTimeStamp,
@@ -757,8 +851,9 @@ def toRDF(d: dict, target: str):
     contributors = ""
     download = DataDownload(
         None,
-        contentUrl=URIRef("http://example.com"),
-        # name=Literal(),
+        contentUrl=URIRef(
+            "https://github.com/LvanWissen/notarissennetwerk-rdf/blob/master/data/notarissennetwerk.trig"
+        ),
         url=URIRef("https://github.com/LvanWissen/notarissennetwerk-rdf"),
         encodingFormat="application/trig")
 
@@ -775,15 +870,10 @@ def toRDF(d: dict, target: str):
         about=None,
         url=URIRef('https://notarissennetwerk.nl/'),
         description=[Literal(description, lang='nl')],
-        descriptionSchema=[Literal(description, lang='nl')],
         creator=creators,
         publisher=[URIRef("https://leonvanwissen.nl/me")],
-        publisherSchema=[URIRef("https://leonvanwissen.nl/me")],
         contributor=contributors,
-        contributorSchema=contributors,
-        source=URIRef('https://notarissennetwerk.nl/'),
         isBasedOn=URIRef('https://notarissennetwerk.nl/'),
-        date=date,
         dateCreated=date,
         distribution=download,
         created=None,
@@ -818,10 +908,12 @@ def toRDF(d: dict, target: str):
 
 if __name__ == "__main__":
 
-    # DATA = 'data/notarissen.json'
+    DATA = 'data/notarissen.json'
+    with open(DATA) as infile:
+        DATA = json.load(infile)
 
-    DATA = requests.get(
-        "https://notarissennetwerk.nl/notarissen/export/json").json()
+    # DATA = requests.get(
+    #     "https://notarissennetwerk.nl/notarissen/export/json").json()
 
     TARGET = 'data/notarissennetwerk.trig'
 
