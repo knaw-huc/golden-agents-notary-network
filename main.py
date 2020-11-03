@@ -908,12 +908,12 @@ def toRDF(d: dict, target: str):
 
 if __name__ == "__main__":
 
-    DATA = 'data/notarissen.json'
-    with open(DATA) as infile:
-        DATA = json.load(infile)
+    # DATA = 'data/notarissen.json'
+    # with open(DATA) as infile:
+    #     DATA = json.load(infile)
 
-    # DATA = requests.get(
-    #     "https://notarissennetwerk.nl/notarissen/export/json").json()
+    DATA = requests.get(
+        "https://notarissennetwerk.nl/notarissen/export/json").json()
 
     TARGET = 'data/notarissennetwerk.trig'
 
