@@ -110,7 +110,7 @@ class CreativeWork(Entity):
 
 
 class InventoryBook(CreativeWork):
-    rdf_type = schema.Book, schema.Product
+    rdf_type = schema.Book
 
 
 class DatasetClass(Entity):
@@ -196,8 +196,6 @@ class Person(Entity):
     death = rdfSingle(bio.death)
 
     hasName = rdfMultiple(pnv.hasName)
-
-    owns = rdfMultiple(schema.owns)
 
 
 class PostalAddress(Entity):
@@ -628,12 +626,9 @@ def toRDF(d: dict, target: str):
 
             inventoryCodes = zip(notaryData['inventories'],
                                  notaryData['codes'])
-            inventoryBooks = []
-            for inv, code in inventoryCodes:
-                b = InventoryBook(URIRef(inv), name=[code])
-                inventoryBooks.append(b)
 
-            p.owns = inventoryBooks
+            for inv, code in inventoryCodes:
+                b = InventoryBook(URIRef(inv), name=[code], author=[p])
 
         ## repertorium
         if notary['rep_id']:
