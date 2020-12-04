@@ -12,8 +12,6 @@ Questions:
 
 """
 
-import os
-import time
 import datetime
 import json
 import re
@@ -23,7 +21,6 @@ import calendar
 from unidecode import unidecode
 
 import requests
-from bs4 import BeautifulSoup
 
 import rdflib
 from rdflib import Dataset, ConjunctiveGraph, Graph, URIRef, Literal, XSD, Namespace, RDFS, BNode, OWL, SKOS
@@ -119,18 +116,20 @@ class DatasetClass(Entity):
 
     rdf_type = void.Dataset, schema.Dataset
 
-    title = rdfMultiple(dcterms.title)
+    # title = rdfMultiple(dcterms.title)
     description = rdfMultiple(schema.description)
     creator = rdfMultiple(schema.creator)
     publisher = rdfMultiple(schema.publisher)
     contributor = rdfMultiple(schema.contributor)
-    source = rdfSingle(dcterms.source)
+    # source = rdfSingle(dcterms.source)
     isBasedOn = rdfSingle(schema.isBasedOn)
-    date = rdfSingle(dcterms.date)
+    # date = rdfSingle(dcterms.date)
     dateCreated = rdfSingle(schema.dateCreated)
-    created = rdfSingle(dcterms.created)
-    issued = rdfSingle(dcterms.issued)
-    modified = rdfSingle(dcterms.modified)
+    dateModified = rdfSingle(schema.dateModified)
+    datePublished = rdfSingle(schema.datePublished)
+    # created = rdfSingle(dcterms.created)
+    # issued = rdfSingle(dcterms.issued)
+    # modified = rdfSingle(dcterms.modified)
 
     exampleResource = rdfSingle(void.exampleResource)
     vocabulary = rdfMultiple(void.vocabulary)
@@ -841,51 +840,6 @@ def toRDF(d: dict, target: str):
 
     rdfSubject.db = ds
 
-    description = """Het Notarissennetwerk is een bewerking van het Repertorium van Notarissen. Hier worden biografische gegevens over de notarissen verzameld; jaren waarin ze werkzaam waren, locaties van hun kantoren, namen van klerken en opvolgers, specialisaties, religies en talen, bijverdiensten, netwerken en alle andere gegevens die we over deze veelzijdige mannen konden vinden. Het is work in progresss en wordt steeds weer aangevuld met nieuwe kennis uit het project Alle Amsterdamse Akten van het Stadsarchief Amsterdam."""
-
-    contributors = ""
-    download = DataDownload(
-        None,
-        contentUrl=URIRef(
-            "https://github.com/LvanWissen/notarissennetwerk-rdf/blob/master/data/notarissennetwerk.trig"
-        ),
-        url=URIRef("https://github.com/LvanWissen/notarissennetwerk-rdf"),
-        encodingFormat="application/trig")
-
-    date = Literal(datetime.datetime.now().strftime('%Y-%m-%d'),
-                   datatype=XSD.datetime)
-
-    contributors = contributors.split(', ')
-
-    creators = []
-
-    dataset = DatasetClass(
-        ns.term(''),
-        name=[Literal("Notarissennetwerk", lang='nl')],
-        about=None,
-        url=URIRef('https://notarissennetwerk.nl/'),
-        description=[Literal(description, lang='nl')],
-        creator=creators,
-        publisher=[URIRef("https://leonvanwissen.nl/me")],
-        contributor=contributors,
-        isBasedOn=URIRef('https://notarissennetwerk.nl/'),
-        dateCreated=date,
-        distribution=download,
-        created=None,
-        issued=None,
-        modified=None,
-        exampleResource=p,
-        vocabulary=[
-            URIRef("http://schema.org/"),
-            URIRef("http://semanticweb.cs.vu.nl/2009/11/sem/"),
-            URIRef("http://xmlns.com/foaf/0.1/"),
-            URIRef("http://purl.org/vocab/bio/0.1/"),
-            URIRef("http://purl.org/vocab/relationship/")
-        ],
-        triples=sum(1 for i in ds.graph(identifier=ns).subjects()),
-        version="1.0",
-        licenseprop=URIRef("https://creativecommons.org/licenses/by-sa/4.0/"))
-
     ds.bind('owl', OWL)
     ds.bind('dcterms', dcterms)
     ds.bind('create', create)
@@ -910,6 +864,6 @@ if __name__ == "__main__":
     DATA = requests.get(
         "https://notarissennetwerk.nl/notarissen/export/json").json()
 
-    TARGET = 'data/notarissennetwerk.trig'
+    TARGET = 'trig/notarissennetwerk.trig'
 
     main(loadData=DATA, target=TARGET)
