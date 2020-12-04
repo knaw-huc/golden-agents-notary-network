@@ -22,7 +22,7 @@
             schema:sameAs <http://ror.org/04dkp9463> ;
             schema:url <http://www.create.humanities.uva.nl/> ] ;
     schema:distribution [ a schema:DataDownload ;
-            schema:contentUrl <https://gitlab.com/uvacreate/vondel/notarissennetwerk-rdf/-/raw/master/data/notarissennetwerk.trig> ;
+            schema:contentUrl <https://gitlab.com/uvacreate/vondel/notarissennetwerk-rdf/-/raw/master/trig/notarissennetwerk.trig> ;
             schema:encodingFormat "application/trig" ] ;
     schema:keywords "notaris, Amsterdam, Stadsarchief Amsterdam"@nl,
         "notary, Amsterdam, City Archives Amsterdam"@en ;
