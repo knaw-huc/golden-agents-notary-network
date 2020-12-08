@@ -15,6 +15,7 @@ Questions:
 import datetime
 import json
 import re
+import urllib
 from itertools import count
 import calendar
 
@@ -168,6 +169,8 @@ class VisualArtwork(CreativeWork):
     dateModified = rdfSingle(schema.dateModified)
 
     temporal = rdfSingle(schema.temporal)
+
+    image = rdfSingle(schema.image)
 
 
 class Place(Entity):
@@ -332,13 +335,11 @@ class IntendedMarriage(GroupEvent):
     hasDocument = rdfSingle(saa.hasDocument)
 
 
-def main(loadData: str = None, target: str = 'data/notarissennetwerk.trig'):
-    """Main function that starts the scraping and conversion to RDF.
+def main(loadData: dict, target: str = 'data/notarissennetwerk.trig'):
+    """Main function that starts the download and conversion to RDF.
 
     Args:
-        loadData (str, optional): File pointer to a json file with earlier
-        scraped data. If supplied, the data will not be fetched again.
-        Defaults to None.
+        loadData (dict): notarissen data as dictionary
         target (str, optional): Destination file location. Defaults to
         'data/notarissennetwerk.trig'.
     """
@@ -347,7 +348,7 @@ def main(loadData: str = None, target: str = 'data/notarissennetwerk.trig'):
     # RDF #
     #######
 
-    toRDF(DATA, target=target)
+    toRDF(loadData, target=target)
 
 
 def yearToDate(yearString):
@@ -409,8 +410,7 @@ def toRDF(d: dict, target: str):
     """Convert the earlier harvested and structured data to RDF.
 
     Args:
-        d (dict): Dictionary with structured portrait information, coming from
-        the loadData() function.
+        d (dict): Dictionary from Notarissennetwerk
         target (str): Destination file path.
     """
 
@@ -813,6 +813,17 @@ def toRDF(d: dict, target: str):
             occupations.append(r)
 
         p.hasOccupation = occupations
+
+        # Portrait
+
+        if notary['portrait']:
+            if notary['portrait'].startswith(
+                    'https://notarissennetwerk.nl/images/'):
+                portraituri = URIRef(urllib.parse.quote(notary['portrait']))
+                portrait = VisualArtwork(None, about=p, image=portraituri)
+            else:
+                portrait = VisualArtwork(URIRef(notary['portrait']), about=p)
+            p.subjectOf = [portrait]
 
         # Relations
         for relation in notary['relations']:
