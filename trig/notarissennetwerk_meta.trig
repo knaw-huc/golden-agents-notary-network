@@ -13,10 +13,10 @@
     schema:description "Het Notarissen Netwerk is een bewerking van het Repertorium van Notarissen. Hier worden biografische gegevens over de notarissen verzameld; jaren waarin ze werkzaam waren, locaties van hun kantoren, namen van klerken en opvolgers, specialisaties, religies en talen, bijverdiensten, netwerken en alle andere gegevens die we over deze veelzijdige mannen konden vinden. Het is work in progresss en wordt steeds weer aangevuld met nieuwe kennis uit het project Alle Amsterdamse Akten van het Stadsarchief Amsterdam." ;
     schema:dateCreated "2020-07-01"^^xsd:date ;
     schema:datePublished "2020-07-01"^^xsd:date ;
-    schema:dateModified "2020-12-04"^^xsd:date ;    
+    schema:dateModified "2022-06-07"^^xsd:date ;    
     schema:creator [ a schema:Person ;
             schema:name "Leon van Wissen" ;
-            schema:sameAs <http://orcid.org/0000-0001-8672-025X> ] ;
+            schema:sameAs <https://orcid.org/0000-0001-8672-025X> ] ;
     schema:publisher [ a schema:Organization ;
             schema:name "CREATE, An E-Humanities Perspective" ;
             schema:sameAs <http://ror.org/04dkp9463> ;
@@ -27,6 +27,7 @@
     schema:keywords "notaris, Amsterdam, Stadsarchief Amsterdam"@nl,
         "notary, Amsterdam, City Archives Amsterdam"@en ;
     schema:license <https://creativecommons.org/licenses/by/4.0/> ;
+    schema:isBasedOn <https://notarissennetwerk.nl/> ;
     schema:temporalCoverage "1578-01-01/1915-12-31" ;
     schema:spatialCoverage "Amsterdam" ;
     schema:url <https://notarissennetwerk.nl/> ;
