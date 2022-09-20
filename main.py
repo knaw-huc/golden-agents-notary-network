@@ -690,7 +690,7 @@ def toRDF(d: dict, target: str):
             eventType = type2eventType[e['type']]
 
             if EventClass:
-                if e['date'] and e['date'] != '0000':
+                if e['date'] and e['date'] not in  ('0000', '0000-00-00'):
 
                     yearLabel = e['date'][:4]
 
