@@ -738,6 +738,14 @@ def toRDF(d: dict, target: str):
                             print(e['date'])
                 else:
                     date = None
+                    timeStamp = date
+                    beginTimeStamp = date
+                    endTimeStamp = date
+                    earliestBeginTimeStamp = date
+                    latestBeginTimeStamp = date
+                    earliestEndTimeStamp = date
+                    latestEndTimeStamp = date
+
                     yearLabel = "?"
 
                 if e['place']:
