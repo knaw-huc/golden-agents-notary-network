@@ -5,24 +5,22 @@
 @prefix schema: <http://schema.org/> .
 
 {
-<https://data.create.humanities.uva.nl/id/notarissennetwerk/> a schema:Dataset ;
-    schema:mainEntityOfPage <https://data.create.humanities.uva.nl/page/notarissennetwerk/> ;
-    schema:includedInDataCatalog <https://data.create.humanities.uva.nl/id/> ;
+<https://data.goldenagents.org/datasets/notarissennetwerk/> a schema:Dataset ;
+    schema:includedInDataCatalog <https://data.goldenagents.org/> ;
     schema:name "Notarissennetwerk"@nl, "Notary Network"@en ;
     schema:alternateName "Notarissennetwerk in RDF" ;
     schema:description "Het Notarissen Netwerk is een bewerking van het Repertorium van Notarissen. Hier worden biografische gegevens over de notarissen verzameld; jaren waarin ze werkzaam waren, locaties van hun kantoren, namen van klerken en opvolgers, specialisaties, religies en talen, bijverdiensten, netwerken en alle andere gegevens die we over deze veelzijdige mannen konden vinden. Het is work in progresss en wordt steeds weer aangevuld met nieuwe kennis uit het project Alle Amsterdamse Akten van het Stadsarchief Amsterdam." ;
     schema:dateCreated "2020-07-01"^^xsd:date ;
-    schema:datePublished "2020-07-01"^^xsd:date ;
-    schema:dateModified "2022-09-20"^^xsd:date ;    
+    schema:datePublished "2020-11-03"^^xsd:date ;
+    schema:dateModified "2022-11-03"^^xsd:date ;    
     schema:creator [ a schema:Person ;
             schema:name "Leon van Wissen" ;
             schema:sameAs <https://orcid.org/0000-0001-8672-025X> ] ;
     schema:publisher [ a schema:Organization ;
-            schema:name "CREATE, An E-Humanities Perspective" ;
-            schema:sameAs <http://ror.org/04dkp9463> ;
-            schema:url <http://www.create.humanities.uva.nl/> ] ;
+            schema:name "Golden Agents project" ;
+            schema:url <https://www.goldenagents.org/> ] ;
     schema:distribution [ a schema:DataDownload ;
-            schema:contentUrl <https://gitlab.com/uvacreate/vondel/notarissennetwerk-rdf/-/raw/master/trig/notarissennetwerk.trig> ;
+            schema:contentUrl <https://github.com/knaw-huc/golden-agents-notary-network/raw/master/trig/notarissennetwerk.trig> ;
             schema:encodingFormat "application/trig" ] ;
     schema:keywords "notaris, Amsterdam, Stadsarchief Amsterdam"@nl,
         "notary, Amsterdam, City Archives Amsterdam"@en ;
@@ -31,5 +29,5 @@
     schema:temporalCoverage "1578-01-01/1915-12-31" ;
     schema:spatialCoverage "Amsterdam" ;
     schema:url <https://notarissennetwerk.nl/> ;
-    schema:version "0.1" .
+    schema:version "v1.0" .
 }

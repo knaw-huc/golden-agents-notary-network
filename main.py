@@ -27,8 +27,8 @@ import rdflib
 from rdflib import Dataset, ConjunctiveGraph, Graph, URIRef, Literal, XSD, Namespace, RDFS, BNode, OWL, SKOS
 from rdfalchemy import rdfSubject, rdfMultiple, rdfSingle
 
-create = Namespace("https://data.create.humanities.uva.nl/")
-schema = Namespace("http://schema.org/")
+ga = Namespace("https://data.goldenagents.org/")
+schema = Namespace("https://schema.org/")
 sem = Namespace("http://semanticweb.cs.vu.nl/2009/11/sem/")
 bio = Namespace("http://purl.org/vocab/bio/0.1/")
 foaf = Namespace("http://xmlns.com/foaf/0.1/")
@@ -38,26 +38,26 @@ saa = Namespace("https://data.goldenagents.org/datasets/SAA/ontology/")
 pnv = Namespace('https://w3id.org/pnv#')
 rel = Namespace("http://purl.org/vocab/relationship/")
 
-rdflib.graph.DATASET_DEFAULT_GRAPH_ID = create
+rdflib.graph.DATASET_DEFAULT_GRAPH_ID = ga
 
-ns = Namespace("https://data.create.humanities.uva.nl/id/notarissennetwerk/")
+ns = Namespace("https://data.goldenagents.org/datasets/notarissennetwerk/")
 
 nsPerson = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/person/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/person/")
 nsPersonName = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/personname/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/personname/")
 nsEvent = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/event/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/event/")
 nsEventType = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/eventtype/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/eventtype/")
 nsRole = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/role/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/role/")
 nsAddress = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/address/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/address/")
 nsOccupation = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/occupation/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/occupation/")
 nsPlace = Namespace(
-    "https://data.create.humanities.uva.nl/id/notarissennetwerk/place/")
+    "https://data.goldenagents.org/datasets/notarissennetwerk/place/")
 
 with open('data/name2adamlink.json') as infile:
     name2adamlink = json.load(infile)
@@ -861,7 +861,7 @@ def toRDF(d: dict, target: str):
 
     ds.bind('owl', OWL)
     ds.bind('dcterms', dcterms)
-    ds.bind('create', create)
+    ds.bind('ga', ga)
     ds.bind('schema', schema)
     ds.bind('sem', sem)
     ds.bind('void', void)
