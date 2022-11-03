@@ -15,6 +15,7 @@ Taken from https://notarissennetwerk.nl/:
 This repository hosts the code and the data of the RDF conversion of https://notarissennetwerk.nl/. The data is included in the Golden Agents project (https://www.goldenagents.org/). 
 
 ## Usage and citation
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7278142.svg)](https://doi.org/10.5281/zenodo.7278142)
 
 * van Wissen, L., & Golden Agents project. (2022). Notary network (Notarissennetwerk) (Version v1.0) [Data set]. https://github.com/knaw-huc/golden-agents-notary-network/
 
