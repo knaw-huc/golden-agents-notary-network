@@ -14,7 +14,7 @@ authors:
   - name: Golden Agents project
 identifiers:
   - type: doi
-    value: 
+    value: 10.5281/zenodo.7278142
     description: URL for release of data
 repository-code: 'https://github.com/knaw-huc/golden-agents-notary-network/'
 abstract: >-
