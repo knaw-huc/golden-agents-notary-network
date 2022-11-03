@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+title: Notary network (Notarissennetwerk)
+message: >-
+  If you use this dataset, please cite it using the
+  metadata from this file.
+type: dataset
+authors:
+  - given-names: Leon
+    name-particle: van
+    family-names: Wissen
+    email: l.vanwissen@uva.nl
+    affiliation: University of Amsterdam
+    orcid: 'https://orcid.org/0000-0001-8672-025X'
+  - name: Golden Agents project
+identifiers:
+  - type: doi
+    value: 
+    description: URL for release of data
+repository-code: 'https://github.com/knaw-huc/golden-agents-notary-network/'
+abstract: >-
+  RDF version of the Notary Network (Notarissennetwerk,
+  https://notarissennetwerk.nl/), a structured version
+  of the Repertorium van Notarissen. The dataset is 
+  included in the Golden Agents project (https://www.goldenagents.org/).
+keywords:
+  - Notaries
+  - Amsterdam
+  - Golden Agents
+  - Linked Open Data
+  - Archival Sources
+license: CC-BY-4.0
+version: v1.0
+date-released: '2022-11-03'
